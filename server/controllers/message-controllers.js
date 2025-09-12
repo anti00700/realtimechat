@@ -1,44 +1,55 @@
 const Message = require("../models/message-model");
+const Chat = require("../models/chat-model");
 const TryCatch = require("../middlewares/TryCatch");
-const User = require("../models/user-model");
 
-
+/**
+ * Send a message (real-time + save to DB)
+ */
 const sendMessage = TryCatch(async (req, res) => {
-    const { content, receiverId, chatId, type, topic, description } = req.body;
-    const senderId = req.user._id;
+  const { chatId, content } = req.body;
+  const senderId = req.user._id;
 
-    if (type === "topic" && (!topic || !description)) {
-        return res.status(400).json({ msg: "Topic and description required" })
-    }
-    if (type !== "topic" && !content) {
-        return res.status(400).json({ msg: "Content required" });
-    }
+  if (!chatId || !content?.trim()) {
+    return res.status(400).json({ msg: "Chat ID and content required" });
+  }
 
-    const message = await Message.create({
-        sender: senderId,
-        receiver: receiverId || null,
-        content,
-        type: type || "text",
-        chatId,
-        topic: type === "topic" ? topic : undefined,
-        description: type === "topic" ? description : undefined,
-    });
+  const chat = await Chat.findById(chatId);
+  if (!chat) {
+    return res.status(404).json({ msg: "Chat not found" });
+  }
 
-    const populatedMessage = await Message.findById(message._id)
-    .populate("sender", "username displayName profilePic")
-    .populate("receiver", "username displayName profilePic");
-    
-    req.io.to(chatId).emit("newMessage", populatedMessage);
-    res.status(201).json({ msg: "Message sent", message: populatedMessage})
+  // Save message
+  let message = await Message.create({
+    senderId,
+    chatId,
+    content: content.trim(),
+    type: "text",
+  });
+
+  // Update lastMessage in chat
+  chat.lastMessage = message._id;
+  await chat.save();
+
+  // Populate sender for frontend
+  message = await message.populate("senderId", "username displayName profilePic");
+
+  // Emit via Socket.IO
+  req.io.to(chatId).emit("newMessage", message);
+
+  res.status(201).json(message);
 });
 
+/**
+ * Get all messages in a chat
+ */
 const getMessages = TryCatch(async (req, res) => {
   const { chatId } = req.params;
+
   const messages = await Message.find({ chatId })
-    .populate("sender", "username displayName profilePic")
-    .populate("receiver", "username displayName profilePic");
+    .populate("senderId", "username displayName profilePic")
+    .sort("timestamp");
+
   res.status(200).json(messages);
 });
 
-
-module.exports = {sendMessage, getMessages};
+module.exports = { sendMessage, getMessages };

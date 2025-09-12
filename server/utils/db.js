@@ -4,7 +4,10 @@ const URI = process.env.MONGODB_URI;
 
 const connectDB = async () => {
   try {
-    await mongoose.connect(URI)
+    await mongoose.connect(URI, {
+      serverSelectionTimeoutMS: 5000,
+      maxPoolSize: 10
+    });
     console.log("Database connected successfully");
   } catch (error) {
     console.error("Database connection error:", error.message);

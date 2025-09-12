@@ -27,7 +27,6 @@ const userSchema = new mongoose.Schema(
     },
     displayName: {
       type: String,
-      required: false,
       trim: true,
       maxlength: 50,
     },
@@ -40,9 +39,12 @@ const userSchema = new mongoose.Schema(
         user: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
+          required: true,
         },
         chatId: {
-          type: String, // e.g., "user1_user2" for one-on-one chats
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Chat",
+          required: true,
         },
       },
     ],
