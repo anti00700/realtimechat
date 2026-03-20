@@ -319,5 +319,4 @@ export const {
   clearConversations,
 } = chatSlice.actions;
 
-export { createOrGetChat, getAIResponse };
 export default chatSlice.reducer;
