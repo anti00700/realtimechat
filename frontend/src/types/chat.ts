@@ -103,6 +103,8 @@ export interface ChatsState {
 
   isSending: boolean;
 
+  isAIThinking: boolean;
+  
   error: string | null;
 }
 
