@@ -229,5 +229,4 @@ const authSlice = createSlice({
 });
 
 export const { logout, clearError } = authSlice.actions;
-export { rehydrateAuth };
 export default authSlice.reducer;
