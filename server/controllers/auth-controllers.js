@@ -7,6 +7,7 @@ const sendMail = require("../utils/sendMail");
 const TryCatch = require("../middlewares/TryCatch");
 const upload = require("../middlewares/multer")
 const cloudinary = require("../utils/cloudinary");
+const ensureAIChat = require("../utils/ensureAIChat");
 
 const home = TryCatch(async (req, res) => {
   res.status(200).json({ msg: "Welcome to the home controller" });
@@ -68,6 +69,9 @@ const verifyUser = TryCatch(async (req, res) => {
   const token = generateToken(newUser._id, res);
 
   const { password: _, ...userData } = newUser.toObject();
+
+  await ensureAIChat(newUser._id);
+  
   res.status(201).json({ message: "User registered successfully", user: userData });
 });
 
@@ -80,7 +84,7 @@ const login = TryCatch(async (req, res) => {
   }
 
   // Check if user exists
-    const user = await User.findOne({email});
+  const user = await User.findOne({ email });
   if (!user) {
     return res.status(400).json({ msg: "Invalid credentials" });
   }
@@ -96,6 +100,8 @@ const login = TryCatch(async (req, res) => {
 
   const { password: _, ...userData } = user.toObject();
 
+  await ensureAIChat(user._id);
+
   res.status(200).json({ message: `Welcome back ${user.username}`, token, user: userData });
 });
 
@@ -108,59 +114,59 @@ const logout = TryCatch(async (req, res) => {
   res.status(200).json({ msg: "Logged out successfully" });
 });
 
-// const updateProfilePic = TryCatch(async (req, res) => {
-//   const userId = req.user._id;
-//   const file = req.file;
+const updateProfilePic = TryCatch(async (req, res) => {
+  const userId = req.user._id;
+  const file = req.file;
 
-//   if (!file) {
-//     return res.status(400).json({ msg: "No image uploaded"});
-//   }
+  if (!file) {
+    return res.status(400).json({ msg: "No image uploaded"});
+  }
 
-//   const user = await User.findById(userId);
-//   if (!user) {
-//     return res.status(400).json({ msg:"User not found"});
-//   }
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(400).json({ msg:"User not found"});
+  }
 
-//   //upload to cloudinary
-//   const result = await new Promise((resolve, reject) => {
-//     cloudinary.uploader.upload_stream(
-//       {folder: "profile_pics", public_id: `user_${userId}`, overwrite:true},
-//       (error, result)=> {
-//         if (error) reject(error);
-//         else resolve(result);
-//       }
-//     ).end(file.buffer)
-//   });
+  //upload to cloudinary
+  const result = await new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream(
+      {folder: "profile_pics", public_id: `user_${userId}`, overwrite:true},
+      (error, result)=> {
+        if (error) reject(error);
+        else resolve(result);
+      }
+    ).end(file.buffer)
+  });
 
-//   user.profilePic = result.secure_url;
-//   await user.save();
+  user.profilePic = result.secure_url;
+  await user.save();
 
-//   const { password: _, ...userData } = user.toObject();
+  const { password: _, ...userData } = user.toObject();
 
-//   res.status(200).json({ msg: "Profile picture updated", user: userData });
-// });
+  res.status(200).json({ msg: "Profile picture updated", user: userData });
+});
 
 
-// const updateProfile = TryCatch(async (req, res) => {
-//   const { displayName } = req.body;
-//   const userId = req.user._id;
+const updateProfile = TryCatch(async (req, res) => {
+  const { displayName } = req.body;
+  const userId = req.user._id;
 
-//   if (!displayName) {
-//     return res.status(400).json({ msg: "Display name is required" });
-//   }
+  if (!displayName) {
+    return res.status(400).json({ msg: "Display name is required" });
+  }
 
-//   const user = await User.findById(userId);
-//   if (!user) {
-//     return res.status(404).json({ msg: "User not found" });
-//   }
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.status(404).json({ msg: "User not found" });
+  }
 
-//   user.displayName = displayName.trim();
-//   await user.save();
+  user.displayName = displayName.trim();
+  await user.save();
 
-//   const { password: _, ...userData } = user.toObject();
-//   req.io.to(userId).emit("profileUpdated", { userId, displayName: userData.displayName });
-//   res.status(200).json({ msg: "Profile updated", user: userData });
-// });
+  const { password: _, ...userData } = user.toObject();
+  req.io.to(userId).emit("profileUpdated", { userId, displayName: userData.displayName });
+  res.status(200).json({ msg: "Profile updated", user: userData });
+});
 
 // const checkUsername = TryCatch(async (req, res) => {
 //   const { username } = req.query;
@@ -210,13 +216,17 @@ const logout = TryCatch(async (req, res) => {
 //   res.status(200).json({ msg: "Contact added", chatId });
 // });
 
-// const me = TryCatch(async (req, res) => {
-//   const user = await User.findById(req.user._id).select("-password");
-//   if (!user) {
-//     return res.status(404).json({ msg: "User not found" });
-//   }
-//   res.status(200).json({ user });
-// });
+const me = TryCatch(async (req, res) => {
+  const user = await User.findById(req.user._id).select("-password");
+  if (!user) {
+    return res.status(404).json({ msg: "User not found" });
+  }
+  res.status(200).json({ user });
+});
 
 
-module.exports = { home, register, verifyUser, login, logout,};
+module.exports = {
+  home, register, verifyUser, login, logout, me,
+  updateProfilePic,
+  updateProfile,
+};

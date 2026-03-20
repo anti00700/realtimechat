@@ -7,10 +7,10 @@ const generateToken = (userId, res) => {
   })
 
   res.cookie("jtoken",token, {
-    maxAge: 7 * 24 * 60 * 60 * 1000, // Cookie will expire in 7 days in MS
     httpOnly: true,
-    sameSite: "strict", // Helps prevent CSRF attacks
-    secure: process.env.NODE_ENV != "devlopment" // Use secure cookies in production
+    sameSite: "none",    // ← allows cross-site
+    secure: true,        // ← required when sameSite is "none"
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   });
   return token;
 }

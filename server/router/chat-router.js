@@ -1,16 +1,11 @@
 const express = require("express");
 const router = express.Router();
-const chatControllers = require("../controllers/chat-controllers");
-const protect = require("../middlewares/protect");
+const protect = require("../middlewares/protect.js");
+const chatControllers = require("../controllers/chat-controllers.js");
 
-router.route("/")
-  .get(protect, chatControllers.getAllChats)
-  .post(protect, chatControllers.createOrGetChat);
 
-router.route("/:chatId")
-  .get(protect, chatControllers.getChatById);
 
-router.route("/group")
-  .post(protect, chatControllers.createGroupChat);
+router.route("/new").post(protect, chatControllers.createOrGetOneOnOneChat);
+router.route("/all").get(protect, chatControllers.getChats);
 
 module.exports = router;

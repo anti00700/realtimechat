@@ -5,7 +5,6 @@ const TryCatch = require("./TryCatch");
 const protect = async (req, res, next) => {
   const token = req.cookies.jtoken;
 
-  console.log(token)
 
   if (!token) {
     return res.status(401).json({ msg: "Not authorized, no token" });

@@ -1,115 +1,75 @@
-const Chat = require("../models/chat-model");
-const User = require("../models/user-model");
-const TryCatch = require("../middlewares/TryCatch");
+const Chat = require("../models/chat-model.js");
+const TryCatch = require("../middlewares/TryCatch.js");
+const User = require("../models/user-model.js");
 
-/**
- * Create or get one-on-one chat
- * - Also ensures both users are added to each other's contacts
- */
-const createOrGetChat = TryCatch(async (req, res) => {
-  const { userId } = req.body;
-  const currentUserId = req.user._id;
+const createOrGetOneOnOneChat = TryCatch(async (req, res) => {
+  const userId = req.user._id;
+  const { otherUserId } = req.body;
 
-  if (userId === currentUserId.toString()) {
-    return res.status(400).json({ msg: "You cannot chat with yourself" });
+  if (!otherUserId) {
+    res.status(400).json({ message: " other userid is required" });
+    return;
+  };
+
+  const existingChat = await Chat.findOne({
+    isGroup: false,
+    users: { $all: [userId, otherUserId], $size: 2 }
+  }).populate("users", "username profilePic");
+
+  if (existingChat) {
+    res.status(200).json(existingChat);
+    return;
   }
 
-  // 1. Check if chat already exists
-  let chat = await Chat.findOne({
-    isGroupChat: false,
-    participants: { $all: [currentUserId, userId] },
-  }).populate("participants", "username displayName profilePic");
 
-  // 2. If not, create new chat
-  if (!chat) {
-    chat = await Chat.create({
-      participants: [currentUserId, userId],
-      isGroupChat: false,
-    });
+  const newChat = await Chat.create({
+    isGroup: false,
+    users: [userId, otherUserId],
+    createdBy: userId,
+  });
 
-    chat = await chat.populate("participants", "username displayName profilePic");
+  // Update contacts only for the user who created the chat
+  await User.findByIdAndUpdate(
+    userId,
+    { $addToSet: { contacts: { user: otherUserId, chatId: newChat._id } } } // Real chat._id
+  );
 
-    // 🔥 Emit "newChat" event to both users
-    req.io.to(currentUserId.toString()).emit("newChat", chat);
-    req.io.to(userId).emit("newChat", chat);
 
-    // 3. Add to each other’s contacts (WhatsApp-like consistency)
-    const currentUser = await User.findById(currentUserId);
-    const otherUser = await User.findById(userId);
-
-    if (!currentUser.contacts.some(c => c.user.toString() === userId)) {
-      currentUser.contacts.push({ user: userId, chatId: chat._id });
-      await currentUser.save();
-    }
-
-    if (!otherUser.contacts.some(c => c.user.toString() === currentUserId)) {
-      otherUser.contacts.push({ user: currentUserId, chatId: chat._id });
-      await otherUser.save();
-    }
-  }
-
-  res.status(200).json(chat);
+  res.status(201).json({
+    message: "New chat created",
+    chatId: newChat._id,
+    isNew: true
+  });
 });
 
-/**
- * Get all chats for logged-in user
- */
-const getAllChats = TryCatch(async (req, res) => {
+
+const getChats = TryCatch(async (req, res) => {
   const userId = req.user._id;
 
-  const chats = await Chat.find({ participants: userId })
-    .populate("participants", "username displayName profilePic")
-    .populate("lastMessage")
-    .sort({ updatedAt: -1 });
+  const chats = await Chat.find({ users: userId })
+    .populate("users", "username profilePic displayName")
+    .populate("lastMessage", "content senderId timestamp type")
+    .populate("topics.createdBy", "username")
+    .populate("admins", "username")
+    .sort("-updatedAt")
+    .limit(50);
 
-  res.status(200).json(chats);
-});
+  const chatsWithUnread = chats.map(chat => {
+    const userUnread = chat.unreadCounts.find(uc => uc.userId.toString() === userId.toString());
+    const unreadCount = userUnread ? userUnread.count : 0;
 
-/**
- * Get chat by ID
- */
-const getChatById = TryCatch(async (req, res) => {
-  const { chatId } = req.params;
-
-  const chat = await Chat.findById(chatId)
-    .populate("participants", "username displayName profilePic")
-    .populate("lastMessage");
-
-  if (!chat) return res.status(404).json({ msg: "Chat not found" });
-
-  res.status(200).json(chat);
-});
-
-/**
- * Create group chat
- */
-const createGroupChat = TryCatch(async (req, res) => {
-  const { name, participants } = req.body;
-  const currentUserId = req.user._id;
-
-  if (!name || !participants || participants.length < 2) {
-    return res.status(400).json({ msg: "Group needs at least 3 members" });
-  }
-
-  let groupChat = await Chat.create({
-    participants: [...participants, currentUserId],
-    isGroupChat: true,
-    groupName: name,
+    return {
+      ...chat.toObject(),
+      unreadCount
+    };
   });
 
-  groupChat = await groupChat.populate("participants", "username displayName profilePic");
-
-  // 🔥 Emit "newChat" to all members
-  [...participants, currentUserId].forEach((id) => {
-    req.io.to(id.toString()).emit("newChat", groupChat);
+  res.status(200).json({
+    message: "Chats fetched successfully",
+    chats: chatsWithUnread,
+    count: chatsWithUnread.length
   });
 
-  res.status(201).json(groupChat);
 });
 
-module.exports = {
-  createOrGetChat,
-  getAllChats,
-  getChatById,
-  createGroupChat,
-};
+module.exports = { createOrGetOneOnOneChat, getChats };

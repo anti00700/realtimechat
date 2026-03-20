@@ -8,40 +8,44 @@ const messageSchema = new mongoose.Schema({
   },
   receiverId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: false, // Optional for group chats
+    ref: "User", // Only for direct 1-on-1 chats
   },
   chatId: {
-    type: mongoose.Schema.Types.ObjectId, // Changed to ObjectId
-    ref: "Chat", // Reference a Chat model
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Chat",
     required: true,
   },
   content: {
     type: String,
     trim: true,
     required: function () {
-      return this.type !== "topic"; // Required unless topic
+      return this.type !== "topic"; // text/image/video/file must have content
     },
   },
   type: {
     type: String,
-    enum: ["text", "image", "topic"],
-    default: "text",
+    enum: ["text", "image", "video", "file", "topic"],
+    default: "text"
   },
+
+  // 🔹 Reference topic subdocument by ID
   topic: {
-    type: String,
-    trim: true,
-    required: function () {
-      return this.type === "topic";
-    },
+    type: mongoose.Schema.Types.ObjectId
   },
+
   description: {
     type: String,
     trim: true,
     required: function () {
-      return this.type === "topic";
+      return this.type === "topic"; // Topic messages need description
     },
   },
+
+  readBy: [{
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    timestamp: { type: Date, default: Date.now }
+  }],
+  
   timestamp: {
     type: Date,
     default: Date.now,
@@ -49,7 +53,7 @@ const messageSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-messageSchema.index({ chatId: 1, timestamp: -1 }); // Optimize message queries
+messageSchema.index({ chatId: 1, timestamp: -1 });
 messageSchema.index({ senderId: 1 });
 messageSchema.index({ receiverId: 1 });
 

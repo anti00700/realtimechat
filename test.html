@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <h2>Socket Test</h2>
+  <button onclick="connect()">1. Connect</button>
+  <button onclick="join()">2. Join Chat</button>
+  <input id="msg" placeholder="message"><button onclick="send()">3. Send</button>
+  <div id="log"></div>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    // PASTE YOUR VALUES HERE:
+    const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWEwODAyZGM5YTYwYTVmOTI2YWIzM2IiLCJpYXQiOjE3NzI1NTg1OTgsImV4cCI6MTc3MzE2MzM5OH0.yFycoetN7T59Zb6IG3fx8q1d3cl2Hp798vWC5zt6mxk";
+    const CHAT_ID = "69a71d2defbf3511a52555fb";
+    
+    let socket;
+    const log = (m) => document.getElementById('log').innerHTML += `<br>${m}`;
+
+    function connect() {
+      socket = io('http://localhost:5000', { auth: { token: TOKEN } });
+      socket.on('connect', () => log('✅ Connected: ' + socket.id));
+      socket.on('newMessage', (m) => log(`📨 Received: ${m.content}`));
+      socket.on('error', (e) => log(`❌ Error: ${e}`));
+    }
+
+    function join() {
+      socket.emit('joinChat', CHAT_ID);
+      log('Joined chat: ' + CHAT_ID);
+    }
+
+    function send() {
+      const content = document.getElementById('msg').value;
+      socket.emit('sendMessage', { chatId: CHAT_ID, content });
+      log('📤 Sent: ' + content);
+    }
+  </script>
+</body>
+</html>
