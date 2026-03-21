@@ -37,7 +37,12 @@ const register = TryCatch(async (req, res) => {
   const otpToken = generateOtpToken({ email, otp, username, password: hashPassword });
 
   // Send OTP email
+  try {
   await sendMail(email, "OTP Verification", { username, otp });
+} catch (emailError) {
+  console.error("EMAIL ERROR:", emailError.message);
+  return res.status(500).json({ msg: "Email failed: " + emailError.message });
+}
 
   res.status(200).json({
     msg: "OTP sent to email. Please verify to complete registration",
