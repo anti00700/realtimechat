@@ -1,17 +1,21 @@
-const nodemailer = require("nodemailer");
+const Brevo = require("@getbrevo/brevo");
 
 const sendMail = async (email, subject, data) => {
-  const transport = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.BREVO_USER,
-      pass: process.env.BREVO_PASS,
-    },
-  });
+  const apiInstance = new Brevo.TransactionalEmailsApi();
 
-  const html = `<!DOCTYPE html><html lang="en"><head>
+  apiInstance.authentications["apiKey"].apiKey = process.env.BREVO_API_KEY;
+
+  const sendSmtpEmail = new Brevo.SendSmtpEmail();
+
+  sendSmtpEmail.sender = {
+    name: "Batchit",
+    email: process.env.BREVO_USER,
+  };
+
+  sendSmtpEmail.to = [{ email }];
+  sendSmtpEmail.subject = subject;
+
+  sendSmtpEmail.htmlContent = `<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>OTP Verification</title>
@@ -31,12 +35,7 @@ const sendMail = async (email, subject, data) => {
     <div class="footer">If you didn't request this, ignore this email.</div>
   </div></body></html>`;
 
-  await transport.sendMail({
-    from: `"Batchit" <${process.env.BREVO_USER}>`,
-    to: email,
-    subject,
-    html,
-  });
+  await apiInstance.sendTransacEmail(sendSmtpEmail);
 };
 
 module.exports = sendMail;
