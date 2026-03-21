@@ -2,17 +2,14 @@ const nodemailer = require("nodemailer");
 
 const sendMail = async (email, subject, data) => {
   const transport = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
-    auth: {
-      user: process.env.Gmail,
-      pass: process.env.Password,
-    },
-    tls: {
-    rejectUnauthorized: false, // ✅ Allow self-signed or untrusted certificates
+  host: "smtp-relay.brevo.com",
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.BREVO_USER,
+    pass: process.env.BREVO_PASS,
   },
-  });
+});
 
   const html = `<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8">
@@ -58,7 +55,7 @@ const sendMail = async (email, subject, data) => {
   </div></body></html>`;
 
   await transport.sendMail({
-    from: process.env.Gmail,
+    from: process.env.BREVO_USER,
     to: email,
     subject,
     html,
