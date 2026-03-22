@@ -182,9 +182,7 @@ export default function RegisterPage() {
             <h1 className="text-3xl font-black tracking-tighter text-black mb-2">
               Join batchit.
             </h1>
-            <p className="text-sm text-black/40">
-              Takes 30 seconds. No credit card.
-            </p>
+
           </div>
 
 
