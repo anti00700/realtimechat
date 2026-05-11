@@ -9,29 +9,11 @@ const TryCatch = require("../middlewares/TryCatch");
 // ─── INITIALIZE GEMINI (Module Level) ─────────────────────────────────────────
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// ✅ STRICTLY USING YOUR REQUESTED MODEL
 const MODEL_NAME = "gemini-3.1-flash-lite-preview";
 
 const model = genAI.getGenerativeModel({
-<<<<<<< HEAD
-  model: "gemini-3.1-flash-lite",
-  // gemini-1.5-flash: fast, free tier, great for chat.
-  // Other options: "gemini-1.5-pro" (smarter, slower, has usage limits)
-
-  systemInstruction: `You are Batchit AI, a helpful and friendly assistant 
-built into the Batchit messaging app. You help users with questions, 
-tasks, creative writing, and general conversation. Keep responses 
-concise and conversational — this is a chat interface, not a document editor. 
-Do not use excessive markdown formatting. Be warm, direct, and useful.`,
-  // systemInstruction tells Gemini WHO it is and HOW to behave.
-  // This runs before every conversation — it sets the AI's personality.
-  // Keeping responses concise is important for a chat UI.
-  // We explicitly say no excessive markdown because chat bubbles
-  // render plain text — **bold** and # headers would look ugly.
-=======
   model: MODEL_NAME,
-  systemInstruction: `You are Batchit AI, a helpful and friendly assistant built into the Batchit messaging app. Keep responses concise, conversational, and under 3 sentences. Do not use markdown formatting.`,
->>>>>>> 8ffec34 (fix: enforce gemini history alternation + structured logging for preview model)
+  systemInstruction: `You are Batchit AI, a helpful and friendly assistant built into the Batchit messaging app. You help users with questions, tasks, creative writing, and general conversation. Keep responses concise and conversational — this is a chat interface, not a document editor. Do not use excessive markdown formatting. Be warm, direct, and useful.`,
 });
 
 // ─── CONTROLLER: aiChat ───────────────────────────────────────────────────────
