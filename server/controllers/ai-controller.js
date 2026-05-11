@@ -9,7 +9,7 @@ const TryCatch = require("../middlewares/TryCatch");
 // ─── INITIALIZE GEMINI (Module Level) ─────────────────────────────────────────
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const MODEL_NAME = "gemini-3.1-flash-lite";
+const MODEL_NAME = "gemini-1.5-flash";
 
 const model = genAI.getGenerativeModel({
   model: MODEL_NAME,
