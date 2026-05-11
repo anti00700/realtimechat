@@ -33,7 +33,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // Never hardcode API keys in source code — they would be visible in git history.
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-3.1-flash-lite-preview",
+  model: "gemini-3.1-flash-lite",
   // gemini-1.5-flash: fast, free tier, great for chat.
   // Other options: "gemini-1.5-pro" (smarter, slower, has usage limits)
 
